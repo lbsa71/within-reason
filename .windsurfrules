@@ -1,0 +1,8 @@
+Always make sure you have all information you need, and have seen all files you need.
+If in doubt, output ***NEED MORE INFORMATION*** and describe the need.
+Always make sure you have formulated an end-to-end strategy for your updates before starting coding or applying.
+Always keep the root tasks.md and README.md file updated with the latest information about the project.
+Use the tasks.md file to track your progress and to plan your work.
+Start every response with the string '!>' so I know you have read these rules.
+After each functionality addition, consider if it would be pragmatically worth unit testing; if so, write small isolated unit test.
+Always make sure to use the version of a component or API that you are the most familiar with.
