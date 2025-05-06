@@ -2,6 +2,12 @@
 echo Phi-4-Mini-Reasoning Benchmarking Tool
 echo =====================================
 
+:: Set environment variable to disable symlinks warning
+set HF_HUB_DISABLE_SYMLINKS_WARNING=1
+
+:: Set custom cache directory (optional)
+set HF_HOME=%~dp0cache
+
 :: Activate the virtual environment
 call phi4_benchmark_env\Scripts\activate.bat
 
@@ -13,7 +19,7 @@ set NUM_RUNS=3
 set MAX_TOKENS=512
 
 :parse_args
-if "%~1"=="" goto check_cuda
+if "%~1"=="" goto check_packages
 if /i "%~1"=="--cpu" set DEVICE=cpu& shift & goto parse_args
 if /i "%~1"=="--cuda" set DEVICE=cuda& shift & goto parse_args
 if /i "%~1"=="--short" set PROMPT_SET=short& shift & goto parse_args
@@ -28,39 +34,7 @@ if /i "%~1"=="--max-tokens" set MAX_TOKENS=%~2& shift & shift & goto parse_args
 shift
 goto parse_args
 
-:check_cuda
-:: Check if CUDA is available when requested
-if /i "%DEVICE%"=="cuda" (
-    echo Checking CUDA availability...
-    python -c "import torch; import sys; cuda_available = torch.cuda.is_available(); print(f'CUDA available: {cuda_available}'); sys.exit(0 if cuda_available else 1)"
-    if %ERRORLEVEL% neq 0 (
-        echo ERROR: CUDA device requested but CUDA is not available.
-        echo Your PyTorch installation does not have CUDA support.
-        echo.
-        echo To fix this, reinstall PyTorch with CUDA support:
-        echo pip uninstall -y torch
-        echo pip install torch --index-url https://download.pytorch.org/whl/cu121
-        echo.
-        echo Or run the benchmark on CPU instead:
-        echo .\run_benchmark.bat --cpu
-        exit /b 1
-    )
-    
-    :: Only try to get device name if CUDA is available
-    python -c "import torch; print(f'CUDA is available. Using device: {torch.cuda.get_device_name(0)}')"
-) else (
-    echo Using CPU for inference.
-)
-
-:run
-echo Running benchmark with the following configuration:
-echo - Device: %DEVICE%
-echo - Prompt set: %PROMPT_SET%
-echo - Number of runs: %NUM_RUNS%
-echo - Max tokens: %MAX_TOKENS%
-if defined VISUALIZE echo - Visualize: Yes
-if not defined VISUALIZE echo - Visualize: No
-
+:check_packages
 :: Install required packages if not already installed
 pip show transformers >nul 2>&1
 if %ERRORLEVEL% neq 0 (
@@ -77,12 +51,68 @@ if %ERRORLEVEL% neq 0 (
     )
 )
 
-:: Run the benchmark
-python run_benchmarks.py --device %DEVICE% --prompt_sets %PROMPT_SET% --num_runs %NUM_RUNS% --max_new_tokens %MAX_TOKENS% %VISUALIZE%
+:: Create results directory if it doesn't exist
+if not exist results mkdir results
 
+:: If CUDA is requested, let the Python script handle the CUDA check
+:: This ensures the same environment is used for checking and running
+if /i "%DEVICE%"=="cuda" (
+    echo Checking CUDA availability in Python environment...
+    python -c "import torch; import sys; print('PyTorch version:', torch.__version__); print('CUDA available:', torch.cuda.is_available()); print('CUDA version:', torch.version.cuda if torch.cuda.is_available() else 'None'); sys.exit(0 if torch.cuda.is_available() else 1)"
+    
+    if %ERRORLEVEL% neq 0 (
+        echo ERROR: CUDA is not available in the current Python environment.
+        echo Your PyTorch installation does not have CUDA support.
+        echo.
+        echo Would you like to:
+        echo 1. Install PyTorch with CUDA support
+        echo 2. Run on CPU instead
+        echo 3. Exit
+        set /p choice="Enter choice (1-3): "
+        
+        if "%choice%"=="1" (
+            echo Installing PyTorch with CUDA support...
+            pip uninstall -y torch
+            pip install torch --index-url https://download.pytorch.org/whl/cu121
+            goto check_packages
+        ) else if "%choice%"=="2" (
+            echo Running on CPU instead...
+            set DEVICE=cpu
+        ) else (
+            echo Exiting...
+            exit /b 1
+        )
+    )
+)
+
+:run
+echo Running benchmark with the following configuration:
+echo - Device: %DEVICE%
+echo - Prompt set: %PROMPT_SET%
+echo - Number of runs: %NUM_RUNS%
+echo - Max tokens: %MAX_TOKENS%
+if defined VISUALIZE echo - Visualize: Yes
+if not defined VISUALIZE echo - Visualize: No
+
+:: Run the benchmark directly with Python, not through run_benchmarks.py
+:: This ensures the same Python environment is used for the entire process
+python benchmark.py --model "microsoft/Phi-4-mini-reasoning" --device %DEVICE% --prompt_types %PROMPT_SET% --num_runs %NUM_RUNS% --max_new_tokens %MAX_TOKENS% --output "results/benchmark_%PROMPT_SET%_%DATE:~-4,4%%DATE:~-7,2%%DATE:~-10,2%_%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%.json"
+
+:: Check if there are any results files
 echo.
-echo Benchmark complete!
-echo Results are saved in the results directory.
+if exist results\*.json (
+    echo Benchmark complete! Results saved in the results directory:
+    dir /b results\*.json
+    
+    if defined VISUALIZE (
+        for %%f in (results\*.json) do (
+            echo Visualizing results from %%f...
+            python visualize_results.py --results_file "%%f"
+        )
+    )
+) else (
+    echo No results files were created. Check for errors above.
+)
 
 :: Deactivate the virtual environment
 call deactivate
