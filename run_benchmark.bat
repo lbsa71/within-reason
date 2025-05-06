@@ -20,6 +20,7 @@ set MAX_TOKENS=512
 set MODEL=microsoft/Phi-4-mini-reasoning
 set USE_LOCAL=
 set CACHE_MODEL=--cache_model
+set QUANTIZE=0
 
 :parse_args
 if "%~1"=="" goto check_cuda
@@ -38,6 +39,8 @@ if /i "%~1"=="--model" set MODEL=%~2& shift & shift & goto parse_args
 if /i "%~1"=="--use-local" set USE_LOCAL=--use_local_model& shift & goto parse_args
 if /i "%~1"=="--no-cache" set CACHE_MODEL=& shift & goto parse_args
 if /i "%~1"=="--cache" set CACHE_MODEL=--cache_model& shift & goto parse_args
+if /i "%~1"=="--4bit" set QUANTIZE=4& shift & goto parse_args
+if /i "%~1"=="--8bit" set QUANTIZE=8& shift & goto parse_args
 shift
 goto parse_args
 
@@ -95,6 +98,15 @@ if %ERRORLEVEL% neq 0 (
     )
 )
 
+:: Check if quantization is requested and install bitsandbytes if needed
+if %QUANTIZE% GTR 0 (
+    pip show bitsandbytes >nul 2>&1
+    if %ERRORLEVEL% neq 0 (
+        echo Installing bitsandbytes for quantization...
+        pip install bitsandbytes
+    )
+)
+
 :: Create results directory if it doesn't exist
 if not exist results mkdir results
 
@@ -111,12 +123,14 @@ echo - Number of runs: %NUM_RUNS%
 echo - Max tokens: %MAX_TOKENS%
 if defined USE_LOCAL echo - Using locally cached model: Yes
 if defined CACHE_MODEL echo - Cache model for future runs: Yes
+if %QUANTIZE% EQU 4 echo - Using 4-bit quantization
+if %QUANTIZE% EQU 8 echo - Using 8-bit quantization
 if defined VISUALIZE echo - Visualize: Yes
 if not defined VISUALIZE echo - Visualize: No
 
 :: Run the benchmark directly with Python, not through run_benchmarks.py
 :: This ensures the same Python environment is used for the entire process
-python benchmark.py --model "%MODEL%" --device %DEVICE% --prompt_types %PROMPT_SET% --num_runs %NUM_RUNS% --max_new_tokens %MAX_TOKENS% %USE_LOCAL% %CACHE_MODEL%
+python benchmark.py --model "%MODEL%" --device %DEVICE% --prompt_types %PROMPT_SET% --num_runs %NUM_RUNS% --max_new_tokens %MAX_TOKENS% %USE_LOCAL% %CACHE_MODEL% --quantize %QUANTIZE%
 
 :: Check if there are any results files
 echo.

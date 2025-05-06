@@ -10,6 +10,8 @@
 - [x] Improve CUDA error handling with helpful messages
 - [x] Add model caching system
 - [x] Add logging of generated answers
+- [x] Add quantization support for large models
+- [x] Improve output quality with proper chat formatting
 - [ ] Run benchmarks and measure tokens/second
 - [ ] Generate report with results
 
@@ -26,6 +28,9 @@
 - [x] Implement model caching system with local model usage option
 - [x] Add logging of generated answers in separate JSON files
 - [x] Include model name in output filenames
+- [x] Add 4-bit and 8-bit quantization support for running large models on limited VRAM
+- [x] Add system prompts and chat formatting for better model responses
+- [x] Implement response extraction to remove prompt repetition in outputs
 
 ## Notes
 - Using Phi-4-Mini-Reasoning model from Microsoft
@@ -38,3 +43,5 @@
 - Provides helpful instructions for installing CUDA-enabled PyTorch
 - Models can be cached locally to avoid repeated downloads
 - Generated answers are logged in separate JSON files for analysis
+- Supports 4-bit and 8-bit quantization for running large models on GPUs with limited VRAM
+- Uses system prompts and proper chat formatting for better quality responses
