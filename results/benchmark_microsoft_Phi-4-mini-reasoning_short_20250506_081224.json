@@ -1,0 +1,172 @@
+{
+  "model": "microsoft/Phi-4-mini-reasoning",
+  "device": "cuda",
+  "timestamp": "2025-05-06T08:15:02.355941",
+  "system_info": {
+    "device_name": "NVIDIA GeForce RTX 4090 Laptop GPU",
+    "cuda_available": true,
+    "cuda_version": "12.1",
+    "python_version": "3.10.0",
+    "pytorch_version": "2.5.1+cu121",
+    "os": "Windows 10"
+  },
+  "overall_stats": {
+    "mean_tokens_per_second": 24.20515637062301,
+    "median_tokens_per_second": 24.603028547736486,
+    "min_tokens_per_second": 21.312754264699695,
+    "max_tokens_per_second": 26.11449389372321,
+    "stddev_tokens_per_second": 1.9471865669155926
+  },
+  "detailed_results": [
+    {
+      "prompt": "Who are you?",
+      "runs": [
+        {
+          "run": 1,
+          "input_tokens": 4,
+          "generated_tokens": 512,
+          "total_tokens": 516,
+          "time_seconds": 19.451740741729736,
+          "tokens_per_second": 26.32155172115823
+        },
+        {
+          "run": 2,
+          "input_tokens": 4,
+          "generated_tokens": 512,
+          "total_tokens": 516,
+          "time_seconds": 19.76035237312317,
+          "tokens_per_second": 25.910469121815424
+        },
+        {
+          "run": 3,
+          "input_tokens": 4,
+          "generated_tokens": 512,
+          "total_tokens": 516,
+          "time_seconds": 20.62293267250061,
+          "tokens_per_second": 24.826730908292202
+        }
+      ],
+      "avg_tokens_per_second": 25.686250583755285
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "runs": [
+        {
+          "run": 1,
+          "input_tokens": 7,
+          "generated_tokens": 1,
+          "total_tokens": 8,
+          "time_seconds": 0.06424927711486816,
+          "tokens_per_second": 15.564377451471533
+        },
+        {
+          "run": 2,
+          "input_tokens": 7,
+          "generated_tokens": 1,
+          "total_tokens": 8,
+          "time_seconds": 0.0388636589050293,
+          "tokens_per_second": 25.73097922775849
+        },
+        {
+          "run": 3,
+          "input_tokens": 7,
+          "generated_tokens": 1,
+          "total_tokens": 8,
+          "time_seconds": 0.04416394233703613,
+          "tokens_per_second": 22.64290611486906
+        }
+      ],
+      "avg_tokens_per_second": 21.312754264699695
+    },
+    {
+      "prompt": "What is 2+2?",
+      "runs": [
+        {
+          "run": 1,
+          "input_tokens": 7,
+          "generated_tokens": 1,
+          "total_tokens": 8,
+          "time_seconds": 0.04278159141540527,
+          "tokens_per_second": 23.37453953711289
+        },
+        {
+          "run": 2,
+          "input_tokens": 7,
+          "generated_tokens": 1,
+          "total_tokens": 8,
+          "time_seconds": 0.042240142822265625,
+          "tokens_per_second": 23.67416237695295
+        },
+        {
+          "run": 3,
+          "input_tokens": 7,
+          "generated_tokens": 1,
+          "total_tokens": 8,
+          "time_seconds": 0.043708086013793945,
+          "tokens_per_second": 22.879061775535252
+        }
+      ],
+      "avg_tokens_per_second": 23.309254563200366
+    },
+    {
+      "prompt": "Tell me a joke.",
+      "runs": [
+        {
+          "run": 1,
+          "input_tokens": 5,
+          "generated_tokens": 33,
+          "total_tokens": 38,
+          "time_seconds": 1.3725545406341553,
+          "tokens_per_second": 24.042760431766272
+        },
+        {
+          "run": 2,
+          "input_tokens": 5,
+          "generated_tokens": 33,
+          "total_tokens": 38,
+          "time_seconds": 1.2598328590393066,
+          "tokens_per_second": 26.193950858818173
+        },
+        {
+          "run": 3,
+          "input_tokens": 5,
+          "generated_tokens": 33,
+          "total_tokens": 38,
+          "time_seconds": 1.3999438285827637,
+          "tokens_per_second": 23.57237435262501
+        }
+      ],
+      "avg_tokens_per_second": 24.603028547736486
+    },
+    {
+      "prompt": "What's the weather like?",
+      "runs": [
+        {
+          "run": 1,
+          "input_tokens": 5,
+          "generated_tokens": 512,
+          "total_tokens": 517,
+          "time_seconds": 19.72610092163086,
+          "tokens_per_second": 25.955458812367787
+        },
+        {
+          "run": 2,
+          "input_tokens": 5,
+          "generated_tokens": 512,
+          "total_tokens": 517,
+          "time_seconds": 19.112298488616943,
+          "tokens_per_second": 26.789033265932986
+        },
+        {
+          "run": 3,
+          "input_tokens": 5,
+          "generated_tokens": 512,
+          "total_tokens": 517,
+          "time_seconds": 20.000789403915405,
+          "tokens_per_second": 25.598989602868855
+        }
+      ],
+      "avg_tokens_per_second": 26.11449389372321
+    }
+  ]
+}

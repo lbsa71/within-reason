@@ -8,6 +8,8 @@
 - [x] Create helper scripts for running benchmarks
 - [x] Add CUDA availability checks
 - [x] Improve CUDA error handling with helpful messages
+- [x] Add model caching system
+- [x] Add logging of generated answers
 - [ ] Run benchmarks and measure tokens/second
 - [ ] Generate report with results
 
@@ -21,6 +23,9 @@
 - [x] Add CUDA availability checks to all scripts
 - [x] Improve error handling for CUDA availability checks
 - [x] Add automatic installation of CUDA-enabled PyTorch when needed
+- [x] Implement model caching system with local model usage option
+- [x] Add logging of generated answers in separate JSON files
+- [x] Include model name in output filenames
 
 ## Notes
 - Using Phi-4-Mini-Reasoning model from Microsoft
@@ -31,3 +36,5 @@
 - Can run on either CPU or CUDA-enabled GPU
 - Scripts will exit with error if CUDA is requested but not available
 - Provides helpful instructions for installing CUDA-enabled PyTorch
+- Models can be cached locally to avoid repeated downloads
+- Generated answers are logged in separate JSON files for analysis
