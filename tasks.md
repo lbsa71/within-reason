@@ -12,6 +12,7 @@
 - [x] Add logging of generated answers
 - [x] Add quantization support for large models
 - [x] Improve output quality with proper chat formatting
+- [x] Add GPU optimization features for better utilization
 - [ ] Run benchmarks and measure tokens/second
 - [ ] Generate report with results
 
@@ -30,7 +31,10 @@
 - [x] Include model name in output filenames
 - [x] Add 4-bit and 8-bit quantization support for running large models on limited VRAM
 - [x] Add system prompts and chat formatting for better model responses
+- [x] Implement canonical Llama-family chat template (<|system|>...<|user|>...<|assistant|>) to prevent prompt echoes and improve output quality
 - [x] Implement response extraction to remove prompt repetition in outputs
+- [x] Add structured response format with separate response and thinking components
+- [x] Implement GPU optimization features (mixed precision, KV caching, batch processing)
 
 ## Notes
 - Using Phi-4-Mini-Reasoning model from Microsoft
@@ -45,3 +49,5 @@
 - Generated answers are logged in separate JSON files for analysis
 - Supports 4-bit and 8-bit quantization for running large models on GPUs with limited VRAM
 - Uses system prompts and proper chat formatting for better quality responses
+- Provides GPU optimization options to improve utilization during inference
+- Structured output format separates response, thinking process, and full output

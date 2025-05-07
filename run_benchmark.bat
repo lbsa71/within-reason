@@ -21,6 +21,10 @@ set MODEL=microsoft/Phi-4-mini-reasoning
 set USE_LOCAL=
 set CACHE_MODEL=--cache_model
 set QUANTIZE=0
+set OPTIMIZE_GPU=
+set BATCH_SIZE=
+set DISABLE_KV_CACHE=
+set DISABLE_MIXED_PRECISION=
 
 :parse_args
 if "%~1"=="" goto check_cuda
@@ -41,6 +45,10 @@ if /i "%~1"=="--no-cache" set CACHE_MODEL=& shift & goto parse_args
 if /i "%~1"=="--cache" set CACHE_MODEL=--cache_model& shift & goto parse_args
 if /i "%~1"=="--4bit" set QUANTIZE=4& shift & goto parse_args
 if /i "%~1"=="--8bit" set QUANTIZE=8& shift & goto parse_args
+if /i "%~1"=="--optimize-gpu" set OPTIMIZE_GPU=--optimize_gpu& shift & goto parse_args
+if /i "%~1"=="--batch" set BATCH_SIZE=--batch_size %~2& shift & shift & goto parse_args
+if /i "%~1"=="--disable-kv-cache" set DISABLE_KV_CACHE=--disable_kv_cache& shift & goto parse_args
+if /i "%~1"=="--disable-mixed-precision" set DISABLE_MIXED_PRECISION=--disable_mixed_precision& shift & goto parse_args
 shift
 goto parse_args
 
@@ -127,28 +135,37 @@ if %QUANTIZE% EQU 4 echo - Using 4-bit quantization
 if %QUANTIZE% EQU 8 echo - Using 8-bit quantization
 if defined VISUALIZE echo - Visualize: Yes
 if not defined VISUALIZE echo - Visualize: No
+if defined OPTIMIZE_GPU echo - GPU optimization: Enabled
+if defined BATCH_SIZE echo - Batch size: %BATCH_SIZE:~13%
+if defined DISABLE_KV_CACHE echo - KV cache: Disabled
+if defined DISABLE_MIXED_PRECISION echo - Mixed precision: Disabled
 
 :: Run the benchmark directly with Python, not through run_benchmarks.py
 :: This ensures the same Python environment is used for the entire process
-python benchmark.py --model "%MODEL%" --device %DEVICE% --prompt_types %PROMPT_SET% --num_runs %NUM_RUNS% --max_new_tokens %MAX_TOKENS% %USE_LOCAL% %CACHE_MODEL% --quantize %QUANTIZE%
+set TIMESTAMP=%DATE:~-4%%DATE:~-7,2%%DATE:~-10,2%_%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%
+set TIMESTAMP=%TIMESTAMP: =0%
+set MODEL_NAME=%MODEL:/=_%
+set MODEL_NAME=%MODEL_NAME:\=_%
+set RESULT_FILE=results\benchmark_%MODEL_NAME%_%PROMPT_SET%_%TIMESTAMP%.json
+set ANSWER_FILE=results\answers_%MODEL_NAME%_%PROMPT_SET%_%TIMESTAMP%.json
 
-:: Check if there are any results files
+python benchmark.py --model "%MODEL%" --device %DEVICE% --prompt_types %PROMPT_SET% --num_runs %NUM_RUNS% --max_new_tokens %MAX_TOKENS% %USE_LOCAL% %CACHE_MODEL% --quantize %QUANTIZE% %OPTIMIZE_GPU% %BATCH_SIZE% %DISABLE_KV_CACHE% %DISABLE_MIXED_PRECISION%
+
+:: Check if the expected result file was created
 echo.
-if exist results\*.json (
-    echo Benchmark complete! Results saved in the results directory:
-    dir /b results\benchmark_*.json
+if exist %RESULT_FILE% (
+    echo Benchmark complete! Results saved to:
+    echo %RESULT_FILE%
     echo.
-    echo Generated answers saved in:
-    dir /b results\answers_*.json
+    echo Generated answers saved to:
+    echo %ANSWER_FILE%
     
     if defined VISUALIZE (
-        for %%f in (results\benchmark_*.json) do (
-            echo Visualizing results from %%f...
-            python visualize_results.py --results_file "%%f"
-        )
+        echo Visualizing results...
+        python visualize_results.py --results_file "%RESULT_FILE%"
     )
 ) else (
-    echo No results files were created. Check for errors above.
+    echo No results were created for this benchmark run. Check for errors above.
 )
 
 :: Deactivate the virtual environment

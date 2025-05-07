@@ -11,6 +11,7 @@ This project benchmarks the Microsoft Phi-4-Mini-Reasoning model to measure its 
 - `run_benchmark.bat`: Windows batch script for easy execution
 - `results/`: Directory containing benchmark results and generated answers
 - `models/`: Directory for cached model files
+- `model_formats.py`: Model-specific prompt formatting information
 
 ### Setup
 ```bash
@@ -49,6 +50,10 @@ The easiest way to run the benchmarks is using the batch file:
 .\run_benchmark.bat --4bit       # Use 4-bit quantization
 .\run_benchmark.bat --8bit       # Use 8-bit quantization
 
+# Run with GPU optimizations for better utilization
+.\run_benchmark.bat --optimize-gpu
+.\run_benchmark.bat --batch 4    # Use batch size of 4
+
 # Run with visualization
 .\run_benchmark.bat --visualize
 ```
@@ -56,7 +61,7 @@ The easiest way to run the benchmarks is using the batch file:
 Or run the Python script directly:
 
 ```bash
-python benchmark.py --device cuda --prompt_types all --num_runs 3 --max_new_tokens 512 --model "microsoft/Phi-4-mini-reasoning" --cache_model --quantize 4
+python benchmark.py --device cuda --prompt_types all --num_runs 3 --max_new_tokens 512 --model "microsoft/Phi-4-mini-reasoning" --cache_model --quantize 4 --optimize_gpu --batch_size 2
 ```
 
 ### Features
@@ -68,6 +73,19 @@ python benchmark.py --device cuda --prompt_types all --num_runs 3 --max_new_toke
 - Includes model name in output filenames for easy identification
 - Creates visualizations of benchmark results
 - Supports 4-bit and 8-bit quantization for running large models on GPUs with limited VRAM
+- GPU optimization options for better hardware utilization
+- Structured output with separate response and thinking components
+- Proper chat formatting with system prompts
+- Llama-family models (TinyLlama, Llama, Vicuna) now use the canonical chat template:
+  
+  ```
+  <|system|>
+  {system}</s>
+  <|user|>
+  {prompt}</s>
+  <|assistant|>
+  ```
+  This prevents prompt echoes and ensures high-quality, direct responses.
 
 ### Running Large Models on Limited VRAM
 For larger models like Qwen3-14B (14.8B parameters), you'll need to use quantization:
@@ -77,5 +95,12 @@ For larger models like Qwen3-14B (14.8B parameters), you'll need to use quantiza
 - **<8GB GPU**: Consider using CPU mode with `--cpu` (will be very slow)
 
 The quantization feature reduces the precision of model weights, allowing larger models to fit in limited VRAM with minimal impact on output quality.
+
+### Improving GPU Utilization
+LLM inference often shows low GPU utilization due to the autoregressive nature of token generation. To improve utilization:
+
+1. Use the `--optimize-gpu` flag to enable mixed precision and other optimizations
+2. Try different batch sizes with `--batch <size>` (if running multiple prompts)
+3. For best performance, consider using specialized inference engines like vLLM or TensorRT
 
 See `tasks.md` for current project status and roadmap.

@@ -15,6 +15,13 @@ def get_model_specific_format(model_id):
             "response_prefix": "\u200bassistant\n",
             "extract_pattern": "\u200bassistant\n(.*?)(?:\n|$)"
         }
+    elif any(x in model_id_lower for x in ["llama", "tinyllama", "vicuna"]):
+        # Llama-family canonical chat format
+        return {
+            "format": "<|system|>\n{system}</s>\n<|user|>\n{prompt}</s>\n<|assistant|>",
+            "response_prefix": "<|assistant|>",
+            "extract_pattern": "<\|assistant\|>(.*?)(?:</s>|$)"
+        }
     elif "phi" in model_id_lower:
         # Phi-style format
         return {

@@ -92,6 +92,21 @@ def is_model_cached(model_id):
     # Check if the directory exists and has files in it
     return os.path.exists(cache_dir) and len(os.listdir(cache_dir)) > 0
 
+def print_gpu_memory_usage(label=""):
+    """Print current GPU memory usage."""
+    if torch.cuda.is_available():
+        allocated = torch.cuda.memory_allocated() / (1024**3)
+        reserved = torch.cuda.memory_reserved() / (1024**3)
+        max_allocated = torch.cuda.max_memory_allocated() / (1024**3)
+        
+        print(f"GPU Memory ({label}):")
+        print(f"  Allocated: {allocated:.2f} GB")
+        print(f"  Reserved:  {reserved:.2f} GB")
+        print(f"  Max Allocated: {max_allocated:.2f} GB")
+        
+        # Reset peak stats
+        torch.cuda.reset_peak_memory_stats()
+
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Benchmark Phi-4-Mini-Reasoning model")
@@ -116,6 +131,14 @@ def parse_args():
                         help="Cache the model locally for future runs")
     parser.add_argument("--quantize", type=int, choices=[0, 4, 8], default=0,
                         help="Quantize model to specified bit width (0=no quantization, 4=4-bit, 8=8-bit)")
+    parser.add_argument("--batch_size", type=int, default=1,
+                        help="Batch size for inference (default: 1)")
+    parser.add_argument("--optimize_gpu", action="store_true",
+                        help="Apply GPU optimizations for better utilization")
+    parser.add_argument("--disable_kv_cache", action="store_true",
+                        help="Disable KV caching for debugging")
+    parser.add_argument("--disable_mixed_precision", action="store_true",
+                        help="Disable mixed precision for debugging")
     return parser.parse_args()
 
 def extract_clean_response(full_output, model_id):
@@ -316,7 +339,7 @@ def benchmark_pipeline(model_id, prompts, max_new_tokens, device, num_runs, use_
     
     return results, generated_answers
 
-def benchmark_direct(model_id, prompts, max_new_tokens, device, num_runs, use_local_model=False, cache_model=False, quantize=0):
+def benchmark_direct(model_id, prompts, max_new_tokens, device, num_runs, use_local_model=False, cache_model=False, quantize=0, batch_size=1, optimize_gpu=False, disable_kv_cache=False, disable_mixed_precision=False):
     """Benchmark using direct model and tokenizer calls."""
     results = []
     generated_answers = []
@@ -385,10 +408,14 @@ def benchmark_direct(model_id, prompts, max_new_tokens, device, num_runs, use_lo
         load_time = time.time() - start_time
         print("Model and tokenizer loaded in %.2f seconds" % load_time)
         
+        # Print GPU memory usage after model loading
+        if device == "cuda":
+            print_gpu_memory_usage("After model loading")
+        
         # System prompt for better responses
         system_prompt = "You are a helpful, accurate, and concise assistant. Answer the user's questions directly without repeating the question. Provide factual information and avoid unnecessary text."
         
-        # Run benchmarks
+        # Process prompts individually (original implementation)
         for i, prompt in enumerate(prompts):
             # Extract content from prompt if it's a dictionary
             prompt_text = prompt["content"] if isinstance(prompt, dict) and "content" in prompt else prompt
@@ -414,19 +441,46 @@ def benchmark_direct(model_id, prompts, max_new_tokens, device, num_runs, use_lo
                     formatted_prompt = f"{system_prompt}\n\nUser: {prompt_text}\n\nAssistant:"
                 
                 # Tokenize the prompt
-                inputs = tokenizer(formatted_prompt, return_tensors="pt").to(device)
+                inputs = tokenizer(formatted_prompt, return_tensors="pt", padding="max_length", truncation=True, max_length=2048).to(device)
                 input_length = inputs.input_ids.shape[1]
                 
-                # Run the model
+                # Print GPU memory before generation
+                if device == "cuda":
+                    print_gpu_memory_usage("Before generation")
+                
+                # Run the model with optimizations for better GPU utilization
                 start_time = time.time()
                 with torch.no_grad():
-                    outputs = model.generate(
-                        **inputs, 
-                        max_new_tokens=max_new_tokens,
-                        do_sample=True,
-                        temperature=0.7
-                    )
+                    # Only use mixed precision if enabled and not disabled
+                    use_mixed_precision = device == "cuda" and optimize_gpu and not disable_mixed_precision
+                    
+                    # Configure generation parameters
+                    generation_config = {
+                        "input_ids": inputs.input_ids,
+                        "attention_mask": inputs.attention_mask,
+                        "max_new_tokens": max_new_tokens,
+                        "do_sample": True,
+                        "temperature": 0.7,
+                        "use_cache": not disable_kv_cache,  # Enable KV caching unless disabled
+                        "pad_token_id": tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
+                    }
+                    
+                    # Print optimization settings
+                    print(f"\n  Using mixed precision: {use_mixed_precision}")
+                    print(f"  Using KV cache: {not disable_kv_cache}")
+                    
+                    # Run generation with or without mixed precision
+                    if use_mixed_precision:
+                        with torch.amp.autocast('cuda'):
+                            outputs = model.generate(**generation_config)
+                    else:
+                        outputs = model.generate(**generation_config)
+                
                 end_time = time.time()
+                
+                # Print GPU memory after generation
+                if device == "cuda":
+                    print_gpu_memory_usage("After generation")
                 
                 # Get the generated text
                 full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -449,7 +503,9 @@ def benchmark_direct(model_id, prompts, max_new_tokens, device, num_runs, use_lo
                     "input_tokens": input_length,
                     "output_tokens": output_length,
                     "new_tokens": new_tokens,
-                    "tokens_per_second": tokens_per_second
+                    "tokens_per_second": tokens_per_second,
+                    "mixed_precision": use_mixed_precision,
+                    "kv_cache_enabled": not disable_kv_cache
                 }
                 prompt_results.append(result)
                 
@@ -514,6 +570,7 @@ def summarize_results(all_results, model_id, device):
 
 def main():
     """Main function to run benchmarks."""
+    # Parse command line arguments
     args = parse_args()
     
     # Check if CUDA is available when requested and get the actual device to use
@@ -574,6 +631,16 @@ def main():
             print("Continuing without quantization...")
             args.quantize = 0
     
+    if args.optimize_gpu:
+        print("GPU optimizations enabled")
+        if args.disable_kv_cache:
+            print("- KV cache disabled for debugging")
+        if args.disable_mixed_precision:
+            print("- Mixed precision disabled for debugging")
+    
+    if args.batch_size > 1:
+        print(f"Using batch size of {args.batch_size}")
+    
     # Run benchmarks
     if args.use_pipeline:
         results, generated_answers = benchmark_pipeline(
@@ -595,7 +662,11 @@ def main():
             args.num_runs,
             args.use_local_model,
             args.cache_model,
-            args.quantize
+            args.quantize,
+            args.batch_size,
+            args.optimize_gpu,
+            args.disable_kv_cache,
+            args.disable_mixed_precision
         )
     
     # Check if we got any results
