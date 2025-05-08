@@ -570,6 +570,21 @@ def summarize_results(all_results, model_id, device):
 
 def main():
     """Main function to run benchmarks."""
+    # --- HF_TOKEN Debug/Validation ---
+    import requests
+    hf_token = os.environ.get("HF_TOKEN")
+    if hf_token:
+        print("[HF_TOKEN DEBUG] HF_TOKEN is set:", hf_token[:6] + "..." + hf_token[-4:])
+        headers = {"Authorization": f"Bearer {hf_token}"}
+        try:
+            resp = requests.get("https://huggingface.co/api/whoami-v2", headers=headers, timeout=10)
+            print(f"[HF_TOKEN DEBUG] whoami-v2 status: {resp.status_code}")
+            print(f"[HF_TOKEN DEBUG] whoami-v2 response: {resp.text}")
+        except Exception as e:
+            print(f"[HF_TOKEN DEBUG] whoami-v2 request failed: {e}")
+    else:
+        print("[HF_TOKEN DEBUG] HF_TOKEN is NOT SET!")
+    # --- END HF_TOKEN Debug/Validation ---
     # Parse command line arguments
     args = parse_args()
     
