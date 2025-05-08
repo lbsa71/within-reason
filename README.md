@@ -40,7 +40,12 @@ The easiest way to run the benchmarks is using the batch file:
 .\run_benchmark.bat --short --medium
 
 # Run with a different model
-.\run_benchmark.bat --model "microsoft/phi-3-mini-4k-instruct"
+.\run_benchmark.bat --model "meta-llama/Llama-3.1-8B"
+
+> **Note:** For gated Hugging Face models (like Meta-Llama-3.1-8B), you must:
+> 1. Request and receive access on the model's Hugging Face page.
+> 2. Set your `HF_TOKEN` environment variable (or run `huggingface-cli login`).
+> 3. Ensure your token has "Read" access. If you still get 401 errors, check your access approval, token, and login status.
 
 # Run with model caching options
 .\run_benchmark.bat --use-local  # Use only locally cached model
